@@ -45,93 +45,82 @@ _dynssh_options(){
   )
 }
 
-_camera_mode_options(){
-  _tmp="${HOME}/storage/movies/$( \
-    basename \
-      "${_out}").remote.mp4"
-  _recorder+=(
-    android-recorder
-  )
-  if [[ "${_buffer}" != "" ]]; then
-    _recorder_opts+=(
-      -k
-        "${_buffer}"
-    )
-  fi
-  _recorder_opts+=(
-    -l
-      "${_length}" 
-    -b
-      "${_rate}"
-  )
-}
-
-_apps_options(){
+_android-camera_options(){
   _camera+=(
-    "${_camera_app}"
+    android-camera
   )
-  _recorder_opts+=(
+  _camera_opts+=(
     -l
       "${_length}" 
-    -b
-      "${_rate}"
+    -d
+    -t
   )
 }
 
-# Remote record.
-# $1: input video file
-# $2: recording method (root)
-# $2: delay seconds
-# $3: output video file
-_remote_recorder() {
+_android-vnc-viewer_options(){
+  _viewer+=(
+    "${_viewer_app}"
+  )
+  _viewer_opts+=(
+    -l
+      "${_length}" 
+  )
+}
+
+# Remote camera.
+# $1: target host camera
+# $2: camera app
+# $2: viewer app
+_android_remote_camera() {
   local \
     _target_host="${1}" \
     _recorder_app="${2}" \
-    _resolution="${3}" \
-    _rate="${4}" \
-    _length="${5}" \
-    _beffer="${6}" \
-    _out="${7}" \
-    _recorder_opts=() \
-    _recorder=() \
-    _rsync_opts=() \
+    _viewer_app="${3}" \
+    _length="${4}" \
+    _resolution="${5}" \
+    _dim="${8}" \
+    _local_port="${6}" \
+    _remote_port="${7}" \
+    _out="${9}" \
+    _camera_opts=() \
+    _camera=() \
+    _viewer=() \
+    _viewer_opts=() \
     _dynssh_opts=() \
     _tmp
   if [[ "${quiet}" != "y" ]]; then
-    _recorder_opts+=(
+    _camera_opts+=(
       -v
     )
     _dynssh_opts+=(
       -v
     )
-    _rsync_opts+=(
+    _viewer_opts+=(
       -v
     )
   fi
   _dynssh_options
-  "_${_recorder_app}_options"
+  "_${_camera_app}_options"
   _msg_info \
     "running dynssh with '${_dynssh_opts[*]}'"
+  _run \
+    "viewer"
+    0 \
+    async \
+    "${_viewer[@]}" \
+    "${_viewer_opts[@]}" 
   dynssh \
     "${_dynssh_opts[@]}" -- \
     "${_target_host}" \
-    "${_recorder[@]}" \
-      "${_recorder_opts[@]}" \
-      "${_tmp}"
-  dynssh \
-    "${_dynssh_opts[@]}" \
-    -C \
-      rsync -- \
-    "${_rsync_opts[@]}" \
-    "${_target_host}:${_tmp}" \
-    "${_out}"
-  dynssh \
-    "${_dynssh_opts[@]}" -- \
-    "${_target_host}" \
-    rm \
-      "${_tmp}"
+    "${_camera[@]}" \
+      "${_camera_opts[@]}"
   _msg_info \
-    "recording ended, quitting."
+    "remote camera closed."
+  wait \
+    "$(_get_pid \
+      "viewer")"
+  _msg_info \
+    "viewing ended, quitting."
 }
 
 _resolution_auto_detect() {
@@ -166,26 +155,33 @@ _set_overrides() {
       "You must specify an host."
   fi
   _set_override \
-    "recording" \
+    "view" \
     "date" \
     "$(_get_date_human)"
   _set_override \
     "recorder" \
     "app" \
-    "android-camerarecorder"
+    "android-camera"
   _set_override \
-    "recording" \
+    "view" \
     "resolution" \
     "$(_resolution_auto_detect)" 
   _set_override \
-    "bit" \
-    "rate" \
-    "420000" # 420 Kb?
-    # "16000000" # 16 Mb?
+    "viewer" \
+    "app" \
+    "android-vnc-viewer"
   _set_override \
-    "recording" \
+    "view" \
     "length" \
-    "360" # "$(( 24 * 60 * 60 ))" # 24 hours
+    "$(( 10 * 60 ))" # 10 minutes
+  _set_override \
+    "local" \
+    "port" \
+    "59111"
+  _set_override \
+    "remote" \
+    "port" \
+    "59001"
   if [[ -v override_color ]]; then
     color="${override_color}"
   elif [[ -z "${color}" ]]; then
@@ -201,14 +197,14 @@ _set_overrides() {
 # Shows configuration options.
 _show_config() {
   _msg_info "${app_name} configuration"
-  _msg_info "           Recording date:   $(_get "recording" "date")"
+  _msg_info "                View date:   $(_get "view" "date")"
   _msg_info "              Target host:   $(_get "target" "host")"
-  _msg_info "             Recorder app:   $(_get "recorder" "app")"
-  _msg_info "                 Bit rate:   $(_get "bit" "rate")"
-  _msg_info "     Recording resolution:   $(_get "recording" "resolution")"
-  _msg_info "         Recording length:   $(_get "recording" "length")"
-  _msg_info "         Recording buffer:   $(_get "recording" "buffer")"
-  _msg_info "              Output file:   $(_get "out" "file")"
+  _msg_info "               Camera app:   $(_get "camera" "app")"
+  _msg_info "               Viewer app:   $(_get "viewer" "app")"
+  _msg_info "               Resolution:   $(_get "view" "resolution")"
+  _msg_info "              View length:   $(_get "view" "length")"
+  _msg_info "               Local port:   $(_get "local" "port")"
+  _msg_info "              Remote port:   $(_get "remote" "port")"
 }
 
 # Show help usage, with an exit status.
@@ -231,15 +227,19 @@ Usage:
     (<out_file>)
   options:
      -t <target_host>     Target host.
-                          Default: $(_get "recording" "resolution")
-     -r <recorder_app>    Recorder application to use.
+                          Default: $(_get "target" "host")
+     -a <camera_app>      Camera application to use.
                           Default: $(_get "recorder" "app")
-     -s <widthxheight>    Recording resolution.
-                          Default: $(_get "recording" "resolution")
-     -b <bitrate>         Video bitrate.
-                          Default: $(_get "bit" "rate").
-     -l <length>          Length of the recording.
-                          Default: $(_get "recording" "length").
+     -w <viewer_app>      Viewer application to use.
+                          Default: $(_get "viewer" "app")
+     -s <widthxheight>    Resolution.
+                          Default: $(_get "view" "resolution")
+     -L <length>          Length of the view.
+                          Default: $(_get "view" "length").
+     -l <local_port>      Local VNC viewer port.
+                          Default: $(_get "local" "port").
+     -r <remote_port>     Remote VNC port.
+                          Default: $(_get "remote" "port").
      -h                   This message.
      -v                   Enable verbose output
 ENDUSAGETEXT
@@ -257,16 +257,17 @@ _requirements
 # shellcheck disable=SC2034
 while \
   getopts \
-    't:r:b:l:s:cvh?' \
+    't:a:w:L:s:l:r:cvh?' \
     arg; do
   case \
     "${arg}" in
     t) override_target_host="${OPTARG}" ;;
-    r) override_recorder_app="${OPTARG}" ;;
-    b) override_bit_rate="${OPTARG}" ;;
-    l) override_recording_length="${OPTARG}" ;;
-    k) override_recording_buffer="${OPTARG}" ;;
-    s) override_recording_resolution="${OPTARG}" ;;
+    a) override_camera_app="${OPTARG}" ;;
+    w) override_viewer_app="${OPTARG}" ;;
+    L) override_view_length="${OPTARG}" ;;
+    s) override_view_resolution="${OPTARG}" ;;
+    l) override_local_port="${OPTARG}" ;;
+    r) override_remote_port="${OPTARG}" ;;
     c) override_color="y" ;;
     v) override_quiet="n" ;;
     h|?) _set_overrides && \
@@ -297,12 +298,11 @@ _config_user_init \
 _show_config
 app_opts=(
   "${target_host}"
-  "${local_port}"
-  "${remote_port}"
-  "${recorder_app}"
+  "${camera_app}"
   "${viewer_app}"
   "${view_length}"
-  "${view_hidden}"
+  "${view_resolution}"
+  "${display_dim}"
   "${out_file}"
 )
 _android_remote_camera \
