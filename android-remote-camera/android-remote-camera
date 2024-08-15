@@ -19,21 +19,17 @@ _requirements() {
   _check_cmd \
     'dynssh' \
     'dynssh'
-  _check_cmd \
-    'rsync' \
-    'rsync'
 }
 
 # shellcheck disable=SC2034
 _global_variables() {
-  recording_date=""
+  view_date=""
   target_host=""
-  recording_resolution=""
-  recorder_app=""
-  recording_length=""
-  recording_buffer=""
-  out_file=""
-  bit_rate=""
+  remote_port=""
+  local_port=""
+  camera_app=""
+  viewer_app=""
+  view_length=""
   color=""
   quiet=""
 }
@@ -42,13 +38,14 @@ _dynssh_options(){
   _dynssh_opts+=(
     -t
       "${_target_host}"
-  )
-  _rsync_opts+=(
-    # -az
+    -l
+      "${_local_port}"
+    -r
+      "${_remote_port}"
   )
 }
 
-_android-recorder_options(){
+_camera_mode_options(){
   _tmp="${HOME}/storage/movies/$( \
     basename \
       "${_out}").remote.mp4"
@@ -69,12 +66,9 @@ _android-recorder_options(){
   )
 }
 
-_android-camerarecorder_options(){
-  _tmp="${HOME}/storage/movies/$( \
-    basename \
-      "${_out}").remote.mp4"
-  _recorder+=(
-    android-camerarecorder
+_apps_options(){
+  _camera+=(
+    "${_camera_app}"
   )
   _recorder_opts+=(
     -l
@@ -303,12 +297,13 @@ _config_user_init \
 _show_config
 app_opts=(
   "${target_host}"
+  "${local_port}"
+  "${remote_port}"
   "${recorder_app}"
-  "${recording_resolution}"
-  "${bit_rate}"
-  "${recording_length}"
-  "${recording_buffer}"
+  "${viewer_app}"
+  "${view_length}"
+  "${view_hidden}"
   "${out_file}"
 )
-_remote_recorder \
+_android_remote_camera \
   "${app_opts[@]}"
