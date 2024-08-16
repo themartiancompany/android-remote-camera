@@ -91,7 +91,6 @@ _android_remote_camera() {
     _dim="${6}" \
     _local_port="${7}" \
     _remote_port="${8}" \
-    _out="${9}" \
     _camera_opts=() \
     _camera=() \
     _viewer=() \
@@ -111,6 +110,7 @@ _android_remote_camera() {
   fi
   _dynssh_options
   "_${_camera_app}_options"
+  "_${_viewer_app}_options"
   _msg_info \
     "running dynssh with '${_dynssh_opts[*]}'"
   _run \
@@ -219,6 +219,7 @@ _show_config() {
   _msg_info "              View length:   $(_get "view" "length")"
   _msg_info "               Local port:   $(_get "local" "port")"
   _msg_info "              Remote port:   $(_get "remote" "port")"
+  _msg_info "              Dim display:   $(_get "display" "dim")"
 }
 
 # Show help usage, with an exit status.
@@ -238,7 +239,6 @@ Android remote camera.
 Usage:
   $(_get "app" "name")
     [options]
-    (<out_file>)
   options:
      -t <target_host>     Target host.
                           Default: $(_get "target" "host")
@@ -250,6 +250,7 @@ Usage:
                           Default: $(_get "view" "resolution")
      -L <length>          Length of the view.
                           Default: $(_get "view" "length").
+     -d                   Dim display.
      -l <local_port>      Local VNC viewer port.
                           Default: $(_get "local" "port").
      -r <remote_port>     Remote VNC port.
@@ -302,11 +303,6 @@ shift \
   $(( \
     OPTIND - 1 \
   ))
-(( $# < 1 )) && \
-  _set_overrides && \
-  _usage \
-    1
-out_file="${1}"
 _set_overrides
 _config_user_init \
   "$(_get "app" "name")"
@@ -320,7 +316,6 @@ app_opts=(
   "${display_dim}"
   "${local_port}"
   "${remote_port}"
-  "${out_file}"
 )
 _android_remote_camera \
   "${app_opts[@]}"
