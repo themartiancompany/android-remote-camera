@@ -114,11 +114,12 @@ _android_remote_camera() {
   _msg_info \
     "running dynssh with '${_dynssh_opts[*]}'"
   _run \
-    "viewer"
+    "viewer" \
     0 \
     async \
     "${_viewer[@]}" \
-    "${_viewer_opts[@]}" 
+      "${_viewer_opts[@]}" || \
+  true
   dynssh \
     "${_dynssh_opts[@]}" -- \
     "${_target_host}" \
@@ -317,5 +318,5 @@ app_opts=(
   "${local_port}"
   "${remote_port}"
 )
-# _android_remote_camera \
-#   "${app_opts[@]}"
+_android_remote_camera \
+  "${app_opts[@]}"
