@@ -160,10 +160,6 @@ _set_overrides() {
     "target" \
     "host" \
     ""
-  if [[ "${target_host}" == "" ]]; then
-    _msg_error \
-      "You must specify an host."
-  fi
   _set_override \
     "view" \
     "date" \
@@ -304,6 +300,10 @@ shift \
     OPTIND - 1 \
   ))
 _set_overrides
+if [[ "${target_host}" == "" ]]; then
+  _msg_error \
+    "You must specify a -t <target> option."
+fi
 _config_user_init \
   "$(_get "app" "name")"
 _show_config
@@ -317,5 +317,5 @@ app_opts=(
   "${local_port}"
   "${remote_port}"
 )
-_android_remote_camera \
-  "${app_opts[@]}"
+# _android_remote_camera \
+#   "${app_opts[@]}"
