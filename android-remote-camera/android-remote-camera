@@ -47,6 +47,8 @@ _dynssh_options(){
       "${_local_port}"
     -r
       "${_remote_port}"
+    -C
+      ssh
   )
 }
 
