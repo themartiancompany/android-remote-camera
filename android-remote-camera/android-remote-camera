@@ -19,6 +19,9 @@ _requirements() {
   _check_cmd \
     'dynssh' \
     'dynssh'
+  _check_cmd \
+    'android-vnc-viewer' \
+    'android-vnc-viewer'
 }
 
 # shellcheck disable=SC2034
@@ -78,9 +81,9 @@ _android_remote_camera() {
     _viewer_app="${3}" \
     _length="${4}" \
     _resolution="${5}" \
-    _dim="${8}" \
-    _local_port="${6}" \
-    _remote_port="${7}" \
+    _dim="${6}" \
+    _local_port="${7}" \
+    _remote_port="${8}" \
     _out="${9}" \
     _camera_opts=() \
     _camera=() \
@@ -159,7 +162,7 @@ _set_overrides() {
     "date" \
     "$(_get_date_human)"
   _set_override \
-    "recorder" \
+    "camera" \
     "app" \
     "android-camera"
   _set_override \
@@ -219,7 +222,7 @@ _usage() {
       _usage_text << \
         ENDUSAGETEXT || true
 
-Remote recorder.
+Android remote camera.
 
 Usage:
   $(_get "app" "name")
