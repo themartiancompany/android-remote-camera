@@ -57,7 +57,7 @@ _android-camera_options(){
     android-camera
   )
   _camera_opts+=(
-    -l
+    -L
       "${_length}" 
     -d
     -t
@@ -74,7 +74,7 @@ _android-vnc-viewer_options(){
     )
   fi
   _viewer_opts+=(
-    -l
+    -L
       "${_length}" 
   )
 }
@@ -156,6 +156,15 @@ _resolution_auto_detect() {
     "${_resolution}"
 }
 
+_remote_port_auto_detect() {
+  dynssh \
+    -t \
+      "${target_host}" -- \
+    droidvnc-helper \
+      get \
+        "server_last_port"
+}
+
 # Set defaults and, if present, overrides
 # from program command line option parameters
 _set_overrides() {
@@ -190,7 +199,7 @@ _set_overrides() {
   _set_override \
     "remote" \
     "port" \
-    "59001"
+    "$(_remote_port_auto_detect)" # "59001"
   _set_override \
     "display" \
     "dim" \
