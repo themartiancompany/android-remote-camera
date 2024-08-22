@@ -157,13 +157,20 @@ _resolution_auto_detect() {
 }
 
 _remote_port_auto_detect() {
-  dynssh \
-    -t \
-      "${target_host}" -- \
-    "${target_host}"
-    droidvnc-helper \
-      get \
-        "server_last_port"
+  local \
+    _port
+  _port="$( \
+    dynssh \
+      -t \
+        "${target_host}" -- \
+      "${target_host}" \
+      droidvnc-helper \
+        get \
+	  "server_last_port")"
+  _set_override \
+    "remote" \
+    "port" \
+    "${_port}"
 }
 
 # Set defaults and, if present, overrides
@@ -197,10 +204,7 @@ _set_overrides() {
     "local" \
     "port" \
     "59111"
-  _set_override \
-    "remote" \
-    "port" \
-    "$(_remote_port_auto_detect)" # "59001"
+  _remote_port_auto_detect
   _set_override \
     "display" \
     "dim" \
