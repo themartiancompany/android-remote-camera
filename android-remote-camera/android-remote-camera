@@ -166,7 +166,8 @@ _remote_port_auto_detect() {
       "${target_host}" \
       droidvnc-helper \
         get \
-	  "server_last_port")"
+	  "server_last_port" || \
+      true)"
   _set_override \
     "remote" \
     "port" \
