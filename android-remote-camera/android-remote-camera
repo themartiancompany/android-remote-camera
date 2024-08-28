@@ -33,6 +33,7 @@ _global_variables() {
   view_length=""
   view_resolution=""
   display_dim=""
+  touch_disabled=""
   remote_port=""
   local_port=""
   color=""
@@ -43,10 +44,6 @@ _dynssh_options(){
   _dynssh_opts+=(
     -t
       "${_target_host}"
-    -l
-      "${_local_port}"
-    -r
-      "${_remote_port}"
     -C
       ssh
   )
@@ -57,26 +54,53 @@ _android-camera_options(){
     android-camera
   )
   _camera_opts+=(
-    -L
-      "${_length}" 
     -d
     -t
   )
+  if (( 0 < "${_length}")); then
+    _camera_opts+=(
+      -L
+        "${_length}" 
+    )
+  fi
 }
 
 _android-vnc-viewer_options(){
   _viewer+=(
     "${_viewer_app}"
   )
+  _viewer_opts+=(
+    -t
+      "${_target_host}" 
+  )
+  if (( 0 < "${_length}")); then
+    _viewer_opts+=(
+      -L
+        "${_length}" 
+    )
+  fi
   if [[ "${_dim}" == "y" ]]; then
     _viewer_opts+=(
       -d
     )
   fi
-  _viewer_opts+=(
-    -L
-      "${_length}" 
-  )
+  if [[ "${_touch_disabled}" == "y" ]]; then
+    _viewer_opts+=(
+      -T
+    )
+  fi
+  if [[ "${_local_port}" != "" ]]; then
+    _viewer_opts+=(
+      -p
+        "${_local_port}" 
+    )
+  fi
+  if [[ "${_remote_port}" != "" ]]; then
+    _viewer_opts+=(
+      -P
+        "${_remote_port}" 
+    )
+  fi
 }
 
 # Remote camera.
@@ -91,8 +115,9 @@ _android_remote_camera() {
     _length="${4}" \
     _resolution="${5}" \
     _dim="${6}" \
-    _local_port="${7}" \
-    _remote_port="${8}" \
+    _touch_disabled="${7}" \
+    _local_port="${8}" \
+    _remote_port="${9}" \
     _camera_opts=() \
     _camera=() \
     _viewer=() \
@@ -114,7 +139,7 @@ _android_remote_camera() {
   "_${_camera_app}_options"
   "_${_viewer_app}_options"
   _msg_info \
-    "running dynssh with '${_dynssh_opts[*]}'"
+    "running '${_viewer[*]}' with '${_viewer_opts[*]}'"
   _run \
     "viewer" \
     0 \
@@ -122,6 +147,8 @@ _android_remote_camera() {
     "${_viewer[@]}" \
       "${_viewer_opts[@]}" || \
   true
+  _msg_info \
+    "running dynssh with '${_dynssh_opts[*]}'"
   dynssh \
     "${_dynssh_opts[@]}" -- \
     "${_target_host}" \
@@ -204,11 +231,19 @@ _set_overrides() {
   _set_override \
     "local" \
     "port" \
-    "59111"
-  _remote_port_auto_detect
+    "$(unused-local-port)"
+  _set_override \
+    "remote" \
+    "port" \
+    ""
+  # _remote_port_auto_detect
   _set_override \
     "display" \
     "dim" \
+    "n"
+  _set_override \
+    "touch" \
+    "disabled" \
     "n"
   if [[ -v override_color ]]; then
     color="${override_color}"
@@ -234,6 +269,7 @@ _show_config() {
   _msg_info "               Local port:   $(_get "local" "port")"
   _msg_info "              Remote port:   $(_get "remote" "port")"
   _msg_info "              Dim display:   $(_get "display" "dim")"
+  _msg_info "           Touch disabled:   $(_get "touch" "disabled")"
 }
 
 # Show help usage, with an exit status.
@@ -265,6 +301,9 @@ Usage:
      -L <length>          Length of the view.
                           Default: $(_get "view" "length").
      -d                   Dim display.
+                          Default: $(_get "display" "dim").
+     -T                   Touch disabled.
+                          Default: $(_get "touch" "disabled").
      -l <local_port>      Local VNC viewer port.
                           Default: $(_get "local" "port").
      -r <remote_port>     Remote VNC port.
@@ -286,7 +325,7 @@ _requirements
 # shellcheck disable=SC2034
 while \
   getopts \
-    't:a:w:L:s:dl:r:cvh?' \
+    't:a:w:L:s:dTl:r:cvh?' \
     arg; do
   case \
     "${arg}" in
@@ -296,6 +335,7 @@ while \
     L) override_view_length="${OPTARG}" ;;
     s) override_view_resolution="${OPTARG}" ;;
     d) override_display_dim="y" ;;
+    T) override_touch_disabled="y" ;;
     l) override_local_port="${OPTARG}" ;;
     r) override_remote_port="${OPTARG}" ;;
     c) override_color="y" ;;
@@ -332,6 +372,7 @@ app_opts=(
   "${view_length}"
   "${view_resolution}"
   "${display_dim}"
+  "${touch_disabled}"
   "${local_port}"
   "${remote_port}"
 )
