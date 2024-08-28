@@ -17,11 +17,11 @@ source \
 # are available
 _requirements() {
   _check_cmd \
-    'dynssh' \
     'dynssh'
   _check_cmd \
-    'android-vnc-viewer' \
     'android-vnc-viewer'
+  _check_cmd \
+    'unused-local-port'
 }
 
 # shellcheck disable=SC2034
