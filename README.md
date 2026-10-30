@@ -34,7 +34,7 @@ and
 It is written using the
 [Crash Bash](
   https://github.com/themartiancompany/crash-bash)
-and it's part of the
+and it's a core component of the
 [DogeOS](
   https://github.com/themartiancompany/dogeos)
 Android base.
